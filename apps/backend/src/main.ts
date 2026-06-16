@@ -13,6 +13,8 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.setGlobalPrefix('api');
+
   const configService = app.get(ConfigService);
   const PORT = configService.get<number>('PORT') ?? 4000;
   await app.listen(PORT);
