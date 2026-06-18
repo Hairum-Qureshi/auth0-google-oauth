@@ -1,25 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import jwksRsa from 'jwks-rsa';
-import { HttpService } from '@nestjs/axios';
+import { passportJwtSecret } from 'jwks-rsa';
+import { ConfigService } from '@nestjs/config';
+import Payload from 'src/types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly httpService: HttpService) {
+  constructor(configService: ConfigService) {
     super({
+      secretOrKeyProvider: passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `${configService.get<string>('AUTH0_ISSUER')}.well-known/jwks.json`,
+      }),
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET!,
+      audience: configService.get<string>('AUTH0_AUDIENCE'),
+      issuer: configService.get<string>('AUTH0_ISSUER'),
+      algorithms: ['RS256'],
     });
   }
 
-  async validate(payload: { id: string; sub: string }) {
-    const { id } = payload;
-    // const user = await this.userModel.findById(id).exec();
-    // if (!user) {
-    //   throw new UnauthorizedException('Please log in first');
-    // }
-    // return user;
+  validate(payload: Payload) {
+    return payload;
   }
 }
