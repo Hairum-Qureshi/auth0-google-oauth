@@ -1,185 +1,306 @@
-**NestJS + React + Vite + Tailwind + Turbo Template**
+# Auth0 Configuration
 
-This repository is a **full-stack monorepo template** using **npm workspaces** and **Turborepo** to manage a React frontend and a NestJS backend in a single repository.
+This project uses **Auth0** for authentication and authorization between the React frontend and NestJS backend.
 
-The goal of this template is to provide:
-
-- A minimal but correct monorepo setup
-- Clear separation of frontend and backend concerns
-- Centralized dependency management
-- Coordinated development scripts without over-engineering
-
-This is a **template**, not a production-ready system.
+The frontend authenticates users through Auth0 and obtains access tokens. The backend validates JWT access tokens issued by Auth0 before allowing access to protected routes.
 
 ---
 
-## Repository Structure
+## Auth0 Setup
 
+Before running the application, you must create both:
+
+1. An **API**
+2. A **Single Page Application**
+
+inside your Auth0 tenant.
+
+---
+
+## 1. Create an Auth0 API
+
+Navigate to:
+
+**Auth0 Dashboard → Applications → APIs → Create API**
+
+Configure:
+
+| Field             | Value                                           |
+| ----------------- | ----------------------------------------------- |
+| Name              | Any name (e.g. `My Nest API`)                   |
+| Identifier        | Any unique URI (e.g. `https://api.example.com`) |
+| Signing Algorithm | RS256                                           |
+
+After creation, save the following value:
+
+```text
+Identifier
 ```
-.
-├── apps/
-│   ├── backend/          # NestJS backend application
-│   └── frontend/         # React + Vite + Tailwind frontend
-├── packages/             # Optional shared packages (empty by default)
-├── package.json          # Root workspace + Turbo configuration
-├── package-lock.json     # Single lockfile for the entire monorepo
-├── turbo.json            # Turbo task pipeline
-└── README.md
+
+This value becomes:
+
+```env
+AUTH0_AUDIENCE=<API_IDENTIFIER>
 ```
 
-### Key Structural Notes
+for both the frontend and backend.
 
-- This **is a monorepo**
-- Dependency management is centralized at the **root**
-- Each app remains a **standalone project**
-- No code is shared by default
-- Shared packages are optional, not assumed
+Example:
 
----
-
-## Tech Stack
-
-### Backend (`apps/backend`)
-
-- NestJS
-- TypeScript
-- Basic “Hello World” API
-
-### Frontend (`apps/frontend`)
-
-- React
-- Vite
-- TailwindCSS
-- TypeScript
-
-### Tooling
-
-- npm workspaces (monorepo management)
-- Turborepo (task orchestration and caching)
+```env
+AUTH0_AUDIENCE=https://api.example.com
+```
 
 ---
 
-## Prerequisites
+## 2. Create an Auth0 Application
 
-You need:
+Navigate to:
 
-- Node.js (LTS recommended)
-- npm (v7+ required for workspaces)
+**Auth0 Dashboard → Applications → Applications → Create Application**
+
+Configure:
+
+| Field            | Value                            |
+| ---------------- | -------------------------------- |
+| Name             | Any name (e.g. `React Frontend`) |
+| Application Type | Single Page Application          |
+
+After creation, obtain:
+
+- Domain
+- Client ID
+
+These values will be used in the frontend environment variables.
 
 ---
 
-## Installation
+## 3. Configure Application URLs
 
-From the **repository root**:
+Inside your Auth0 Application settings, configure:
+
+### Allowed Callback URLs
+
+```text
+http://localhost:5173
+```
+
+### Allowed Logout URLs
+
+```text
+http://localhost:5173
+```
+
+### Allowed Web Origins
+
+```text
+http://localhost:5173
+```
+
+Save the changes.
+
+---
+
+## Frontend Environment Variables
+
+Create a `.env` file inside:
+
+```text
+apps/frontend
+```
+
+Add:
+
+```env
+VITE_AUTH0_DOMAIN=xyz
+VITE_AUTH0_CLIENT_ID=xyz
+VITE_AUTH0_AUDIENCE=xyz
+VITE_BACKEND_URL=http://localhost:4000
+```
+
+### Variable Descriptions
+
+#### `VITE_AUTH0_DOMAIN`
+
+Your Auth0 tenant domain.
+
+Example:
+
+```env
+VITE_AUTH0_DOMAIN=dev-abc123.us.auth0.com
+```
+
+---
+
+#### `VITE_AUTH0_CLIENT_ID`
+
+The Client ID of the Auth0 Single Page Application.
+
+---
+
+#### `VITE_AUTH0_AUDIENCE`
+
+The Identifier value from the Auth0 API.
+
+This audience is requested when obtaining access tokens for backend API access.
+
+---
+
+#### `VITE_BACKEND_URL`
+
+Backend API base URL.
+
+Default:
+
+```env
+VITE_BACKEND_URL=http://localhost:4000
+```
+
+---
+
+## Backend Environment Variables
+
+Create a `.env` file inside:
+
+```text
+apps/backend
+```
+
+Add:
+
+```env
+PORT=4000
+FRONTEND_URL=http://localhost:5173
+
+AUTH0_AUDIENCE=xyz
+AUTH0_ISSUER=xyz
+
+JWT_SECRET=xyz
+JWT_EXPIRES=259200000
+```
+
+### Variable Descriptions
+
+#### `PORT`
+
+Port used by the NestJS server.
+
+Default:
+
+```env
+PORT=4000
+```
+
+---
+
+#### `FRONTEND_URL`
+
+Frontend origin used for CORS configuration.
+
+Default:
+
+```env
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
+#### `AUTH0_AUDIENCE`
+
+The Auth0 API Identifier created earlier.
+
+Example:
+
+```env
+AUTH0_AUDIENCE=https://api.example.com
+```
+
+---
+
+#### `AUTH0_ISSUER`
+
+Your Auth0 issuer URL.
+
+Example:
+
+```env
+AUTH0_ISSUER=https://dev-abc123.us.auth0.com/
+```
+
+> The trailing slash is required if your authentication strategy expects the standard Auth0 issuer URL.
+
+---
+
+#### `JWT_SECRET`
+
+Application-specific JWT secret used by backend features that require local token signing.
+
+---
+
+#### `JWT_EXPIRES`
+
+JWT expiration time in milliseconds.
+
+Default:
+
+```env
+JWT_EXPIRES=259200000
+```
+
+Equivalent to:
+
+```text
+3 days
+```
+
+---
+
+## Running the Application
+
+Install dependencies from the repository root:
 
 ```bash
 npm install
 ```
 
-This installs dependencies for **all workspace packages** and generates a **single `package-lock.json`**.
-
-Do not run `npm install` inside individual apps.
-
----
-
-## Configure ENV Variables:
-Create a .env file in the `apps/backend` directory and add the following:
-
-```
-PORT=3000
-FRONTEND_URL=http://localhost:5173
-```
-
-Variable Descriptions:
-
-`PORT`
-The port on which the backend server will run.
-
-`FRONTEND_URL`
-The URL of the frontend application.
-Used for CORS configuration and client–server communication during development.
-
----
-
-## Development
-
-Run all development servers concurrently:
+Start all applications:
 
 ```bash
 npm run dev
 ```
 
-This command:
+Default URLs:
 
-- Uses Turbo to run the `dev` script in each app
-- Starts the NestJS backend
-- Starts the Vite frontend
-- Streams logs with app prefixes
+Frontend:
 
-### Default Ports
-
-- Backend: `http://localhost:3000`
-- Frontend: `http://localhost:5173`
-
----
-
-## Building the Project
-
-To build all apps:
-
-```bash
-npm run build
+```text
+http://localhost:5173
 ```
 
-Turbo will:
+Backend:
 
-- Run builds in the correct order
-- Cache outputs for faster rebuilds
-- Skip unchanged packages when possible
-
----
-
-## Linting
-
-To lint all packages:
-
-```bash
-npm run lint
+```text
+http://localhost:4000
 ```
 
-Each app is responsible for defining its own lint configuration.
-
 ---
 
-## App Independence
+## Authentication Flow
 
-Even though this is a monorepo:
+1. User clicks login in the React application.
+2. Auth0 authenticates the user.
+3. Auth0 returns an access token to the frontend.
+4. The frontend includes the token in API requests:
 
-- Frontend and backend **do not depend on each other**
-- They can be deployed independently
-- They can be developed in isolation
-- No API client or shared types are included by default
+```http
+Authorization: Bearer <access_token>
+```
 
-If you want frontend ↔ backend communication, you must:
+5. NestJS validates the token using:
 
-- Configure CORS in the backend
-- Add environment variables in the frontend
-- Implement API calls manually
+```env
+AUTH0_AUDIENCE
+AUTH0_ISSUER
+```
 
-This is intentional.
-
----
-
-## Turbo Configuration
-
-Turbo is configured via `turbo.json` and operates on **script names**, not commands.
-
-If an app does not define a script (e.g. `dev`, `build`, `lint`), Turbo will skip it.
-
-Turbo is used only for:
-
-- Task orchestration
-- Caching
-- Parallel execution
-
-It does not manage dependencies or enforce architecture.
+6. Protected routes become accessible only to authenticated users.
