@@ -6,6 +6,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt-strategy';
+import { CacheModule } from 'src/cache/cache.module';
+import { CacheService } from 'src/cache/cache.service';
 
 @Module({
   imports: [
@@ -18,13 +20,14 @@ import { JwtStrategy } from './jwt-strategy';
         return {
           secret: config.get<string>('JWT_SECRET'),
           signOptions: {
-            expiresIn: Number(config.get<string>('JWT_EXPIRES')),
+            expiresIn: Number(config.get<string>('JWT_EXPIRES_MS')),
           },
         };
       },
     }),
+    CacheModule,
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, CacheService],
   controllers: [AuthController],
   exports: [PassportModule, JwtStrategy],
 })
